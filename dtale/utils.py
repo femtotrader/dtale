@@ -136,7 +136,12 @@ def json_string(x, nan_display=''):
     :rtype: str
     """
     if x:
-        return str(x)
+        try:
+            return str(x)
+        except UnicodeEncodeError:
+            return x.encode('utf-8')
+        except BaseException as ex:
+            logger.exception(ex)
     return nan_display
 
 
@@ -219,7 +224,9 @@ def json_timestamp(x, nan_display=''):
     :rtype: bigint
     """
     try:
-        return int((time.mktime(x.timetuple()) + (old_div(x.microsecond, 1000000.0))) * 1000)
+        output = (pd.Timestamp(x) if isinstance(x, np.datetime64) else x)
+        output = int((time.mktime(output.timetuple()) + (old_div(output.microsecond, 1000000.0))) * 1000)
+        return output
     except BaseException:
         return nan_display
 
@@ -275,6 +282,9 @@ class JSONFormatter(object):
 
     def format_dicts(self, lsts):
         return [self.format_dict(l) for l in lsts]
+
+    def format_lists(self, df):
+        return {name: [f(v, nan_display=self.nan_display) for v in df[name].values] for _idx, name, f in self.fmts}
 
 
 def classify_type(type_name):

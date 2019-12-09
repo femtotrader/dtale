@@ -7,6 +7,7 @@ import { connect } from "react-redux";
 import ConditionalRender from "../ConditionalRender";
 import { closeChart } from "../actions/charts";
 import About from "./About";
+import { Charts } from "./Charts";
 import { Correlations } from "./Correlations";
 import { CoverageChart } from "./CoverageChart";
 import { Describe } from "./Describe";
@@ -89,6 +90,15 @@ class ReactPopup extends React.Component {
           </ModalTitle>
         );
         body = <Instances />;
+        break;
+      case "charts":
+        modalTitle = (
+          <ModalTitle>
+            <i className="ico-show-chart" />
+            <strong>Chart Builder</strong>
+          </ModalTitle>
+        );
+        body = <Charts />;
         break;
       default:
         break;

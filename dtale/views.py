@@ -192,6 +192,12 @@ class DtaleData(object):
             logger.debug('You must ipython>=5.0 installed to use this functionality')
 
 
+def get_instance(port):
+    if str(port) in DATA:
+        return DtaleData(str(port))
+    return None
+
+
 def build_dtypes_state(data):
     """
     Helper function to build globally managed state pertaining to a D-Tale instances columns & data types
@@ -727,6 +733,50 @@ def _build_timeseries_chart_data(name, df, cols, min=None, max=None, sub_group=N
             data = f.format_dicts(data.itertuples())
             data = dict(data=data, min=min or grp[col].min(), max=max or grp[col].max())
             yield key, data
+
+
+@dtale.route('/chart-data')
+def get_chart_data():
+    try:
+        query = get_str_arg(request, 'query')
+        data = DATA[get_port()]
+        if query:
+            data = data.query(query)
+            if not len(data):
+                return jsonify(dict(error='query "{}" found no data, please alter'.format(query)))
+        x = get_str_arg(request, 'x')
+        y = get_str_arg(request, 'y')
+        group_col = get_str_arg(request, 'group')
+        if group_col is not None:
+            data = data[[group_col, x, y]].sort_values([group_col, x])
+            data.columns = [group_col, 'x', 'y']
+            if len(data[group_col].unique()) > 5:
+                msg = (
+                    '{} contains more than 5 groups, please add additional filter'
+                    ' or else chart will be unreadable'
+                ).format(group_col)
+                return jsonify(dict(error=msg))
+            ret_data = dict(data={}, min=data['y'].min(), max=data['y'].max())
+            f = grid_formatter(
+                grid_columns(data[['x', 'y']]), overrides={'D': lambda f, i, c: f.add_timestamp(i, c)}, nan_display=None
+            )
+            for group_val, grp in data.groupby(group_col):
+                group_val = group_val if isinstance(group_val, string_types) else '{0:.0f}'.format(group_val)
+                ret_data['data'][group_val] = f.format_lists(grp)
+        else:
+            data = data[[x, y]].sort_values(x)
+            data.columns = ['x', 'y']
+            if any(data['x'].duplicated()):
+                return jsonify(
+                    dict(error='{} contains duplicates, please specify group or additional filtering'.format(x))
+                )
+            f = grid_formatter(
+                grid_columns(data), overrides={'D': lambda f, i, c: f.add_timestamp(i, c)}, nan_display=None
+            )
+            ret_data = dict(data={'all': f.format_lists(data)}, min=data['y'].min(), max=data['y'].max())
+        return jsonify(ret_data)
+    except BaseException as e:
+        return jsonify(dict(error=str(e), traceback=str(traceback.format_exc())))
 
 
 @dtale.route('/correlations-ts')

@@ -124,6 +124,8 @@ class TimeseriesChartBody extends React.Component {
               displayFormats: {
                 [units]: "YYYYMMDD",
               },
+            },
+            ticks: {
               min: _.get(datasets, "0.data.0.x"),
               max: _.get(datasets, [0, "data", _.get(datasets, "0.data", []).length - 1, "x"]),
             },

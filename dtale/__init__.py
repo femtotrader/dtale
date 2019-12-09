@@ -4,3 +4,4 @@ dtale = Blueprint('dtale', __name__, url_prefix='/dtale')
 
 # flake8: NOQA
 from dtale.app import show  # isort:skip
+from dtale.views import get_instance  # isort:skip
