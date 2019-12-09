@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function
 
+import os
 import random
 import socket
 import traceback
@@ -332,14 +333,35 @@ def build_app(reaper_on=True, hide_shutdown=False):
 
 def find_free_port():
     """
-    Searches for free port on executing server for running Flask process
+    Searches for free port on executing server to run the Flask process. Checks ports in range specified using
+    environment variables:
 
-    :return: string port number
+    DTALE_MIN_PORT (default: 40000)
+    DTALE_MAX_PORT (default: 49000)
+
+    The range limitation is required for usage in tools such as jupyterhub.  Will raise an exception if an open
+    port cannot be found.
+
+    :return: port number
+    :rtype: int
     """
-    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        s.bind(('', 0))
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        return s.getsockname()[1]
+
+    def is_port_in_use(port):
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+            return s.connect_ex(('localhost', port)) == 0
+
+    min_port = os.environ.get('DTALE_MIN_PORT', 40000)
+    max_port = os.environ.get('DTALE_MAX_PORT', 49000)
+    base = min_port
+    while is_port_in_use(base):
+        base += 1
+        if base > max_port:
+            msg = (
+                'D-Tale could not find an open port from {} to {}, please increase you range by altering the '
+                'environment variables DTALE_MIN_PORT & DTALE_MAX_PORT.'
+            ).format(min_port, max_port)
+            raise Exception(msg)
+    return base
 
 
 def show(data=None, host='0.0.0.0', port=None, name=None, debug=False, subprocess=True, data_loader=None,

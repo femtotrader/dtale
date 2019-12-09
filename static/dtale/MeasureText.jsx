@@ -10,7 +10,7 @@ function measureText(str) {
       "white-space": "nowrap",
       visibility: "hidden",
     });
-  return o.width() + 20; // 5px padding on each side
+  return _.round(o.width()) + 20; // 5px padding on each side
 }
 
 require("./MeasureText.css");
