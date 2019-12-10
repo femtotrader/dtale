@@ -193,4 +193,4 @@ ReactCharts.propTypes = {
 
 const ReduxCharts = connect(({ chartData }) => ({ chartData }))(ReactCharts);
 
-export { ReactCharts, ReduxCharts as CoverageChart };
+export { ReactCharts, ReduxCharts as Charts };

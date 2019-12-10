@@ -59,7 +59,16 @@ function createChart(ctx, fetchedData, { columns, x, y, additionalOptions, chart
           mode: "index",
           intersect: false,
           callbacks: {
-            label: (tooltipItem, _data) => _.round(tooltipItem.yLabel, 4),
+            label: (tooltipItem, data) => {
+              const value = _.round(tooltipItem.yLabel, 4);
+              if(_.size(data) > 1) {
+                const label = data.datasets[tooltipItem.datasetIndex].label || '';
+                if (label) {
+                  return `${label}: ${value}`;
+                }
+              }
+              return value;
+            },
           },
         },
         hover: {
