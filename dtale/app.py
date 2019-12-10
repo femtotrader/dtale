@@ -357,10 +357,10 @@ def find_free_port():
         base += 1
         if base > max_port:
             msg = (
-                'D-Tale could not find an open port from {} to {}, please increase you range by altering the '
+                'D-Tale could not find an open port from {} to {}, please increase your range by altering the '
                 'environment variables DTALE_MIN_PORT & DTALE_MAX_PORT.'
             ).format(min_port, max_port)
-            raise Exception(msg)
+            raise IOError(msg)
     return base
 
 
