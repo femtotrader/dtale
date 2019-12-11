@@ -138,7 +138,7 @@ def test_DtaleFlask():
 
     with ExitStack() as stack:
         mock_run = stack.enter_context(mock.patch('flask.Flask.run', mock.Mock()))
-        stack.enter_context(mock.patch('dtale.app.socket.gethostname', mock.Mock(return_value='test')))
+        stack.enter_context(mock.patch('socket.gethostname', mock.Mock(return_value='test')))
         mock_timer = stack.enter_context(mock.patch('dtale.app.Timer'))
 
         tmp = DtaleFlask('dtale', static_url_path='')
@@ -159,7 +159,7 @@ def test_DtaleFlask():
 
     with ExitStack() as stack:
         mock_run = stack.enter_context(mock.patch('flask.Flask.run', mock.Mock()))
-        stack.enter_context(mock.patch('dtale.app.socket.gethostname', mock.Mock(return_value='test')))
+        stack.enter_context(mock.patch('socket.gethostname', mock.Mock(return_value='test')))
         mock_timer = stack.enter_context(mock.patch('dtale.app.Timer', mock.Mock()))
 
         tmp = DtaleFlask('dtale', static_url_path='', reaper_on=False)
@@ -171,7 +171,7 @@ def test_DtaleFlask():
 
     with ExitStack() as stack:
         mock_run = stack.enter_context(mock.patch('flask.Flask.run', mock.Mock()))
-        stack.enter_context(mock.patch('dtale.app.socket.gethostname', mock.Mock(return_value='test')))
+        stack.enter_context(mock.patch('socket.gethostname', mock.Mock(return_value='test')))
         mock_timer = stack.enter_context(mock.patch('dtale.app.Timer', mock.Mock()))
 
         tmp = DtaleFlask('dtale', static_url_path='')

@@ -39,11 +39,20 @@ def running_with_flask():
     return os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
 
 
-def build_url(port):
-    return 'http://{}:{}'.format(socket.gethostname(), port)
+def get_host(host=None):
+    if host is None:
+        if os.environ.get('JUPYTERHUB_USER_POD_SVC'):
+            return os.environ['JUPYTERHUB_USER_POD_SVC']
+        else:
+            return socket.gethostname()
+    return host
 
 
-def build_shutdown_url(port):
+def build_url(port, host=None):
+    return 'http://{}:{}'.format(get_host(host), port)
+
+
+def build_shutdown_url(port, host=None):
     """
     Builds the shutdown endpoint for the specified port
 
@@ -51,7 +60,7 @@ def build_shutdown_url(port):
     :type port: str
     :return: URL string of the shutdown endpoint for the current server and port passed
     """
-    return '{}/shutdown'.format(build_url(port))
+    return '{}/shutdown'.format(build_url(port, host=host))
 
 
 def get_str_arg(r, name, default=None):

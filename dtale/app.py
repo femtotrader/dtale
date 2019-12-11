@@ -20,7 +20,7 @@ from six import PY3
 
 from dtale import dtale
 from dtale.cli.clickutils import retrieve_meta_info_and_version, setup_logging
-from dtale.utils import build_shutdown_url, build_url, dict_merge, swag_from
+from dtale.utils import build_shutdown_url, build_url, dict_merge, get_host, swag_from
 from dtale.views import cleanup, startup
 
 if PY3:
@@ -97,7 +97,8 @@ class DtaleFlask(Flask):
         :param kwargs: Optional keyword arguments to be passed to :meth:`flask:flask.run`
         """
         self.port = str(kwargs.get('port'))
-        self.shutdown_url = build_shutdown_url(self.port)
+        self.host = kwargs.get('host')
+        self.shutdown_url = build_shutdown_url(self.port, host=self.host)
         if kwargs.get('debug', False):
             self.reaper_on = False
         self.build_reaper()
@@ -163,7 +164,7 @@ class DtaleFlask(Flask):
         return super(DtaleFlask, self).get_send_file_max_age(name)
 
 
-def build_app(reaper_on=True, hide_shutdown=False):
+def build_app(reaper_on=True, hide_shutdown=False, host=None):
     """
     Builds Flask application encapsulating endpoints for D-Tale's front-end
 
@@ -194,7 +195,7 @@ def build_app(reaper_on=True, hide_shutdown=False):
                 'url': 'https://github.com/man-group/dtale'
             },
         },
-        host=socket.gethostname(),
+        host=get_host(host),
         schemes=['http'],
     )
     try:
@@ -364,7 +365,7 @@ def find_free_port():
     return base
 
 
-def show(data=None, host='0.0.0.0', port=None, name=None, debug=False, subprocess=True, data_loader=None,
+def show(data=None, host=None, port=None, name=None, debug=False, subprocess=True, data_loader=None,
          reaper_on=True, open_browser=False, notebook=False, **kwargs):
     """
     Entry point for kicking off D-Tale Flask process from python process
@@ -410,18 +411,18 @@ def show(data=None, host='0.0.0.0', port=None, name=None, debug=False, subproces
     instance = startup(data=data, data_loader=data_loader, port=selected_port, name=name)
 
     def _show():
-        app = build_app(reaper_on=reaper_on)
+        app = build_app(reaper_on=reaper_on, host=host)
         if debug:
             app.jinja_env.auto_reload = True
             app.config['TEMPLATES_AUTO_RELOAD'] = True
         else:
             getLogger("werkzeug").setLevel(LOG_ERROR)
-        url = build_url(selected_port)
+        url = build_url(selected_port, host=host)
         logger.info('D-Tale started at: {}'.format(url))
         if open_browser:
             webbrowser.get().open(url)
 
-        app.run(host=host, port=selected_port, debug=debug)
+        app.run(host=host or '0.0.0.0', port=selected_port, debug=debug)
 
     if subprocess:
         _thread.start_new_thread(_show, ())

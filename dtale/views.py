@@ -69,9 +69,10 @@ class DtaleData(object):
         >>> d.kill()
     """
 
-    def __init__(self, port):
+    def __init__(self, port, host=None):
+        self._host = host
         self._port = port
-        self._url = build_url(port)
+        self._url = build_url(port, host=host)
         self._notebook_handle = None
 
     @property
@@ -95,7 +96,7 @@ class DtaleData(object):
         This function fires a request to this instance's 'shutdown' route to kill it
 
         """
-        requests.get(build_shutdown_url(self._port))
+        requests.get(build_shutdown_url(self._port, host=self._host))
 
     def open_browser(self):
         """
