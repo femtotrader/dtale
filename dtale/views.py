@@ -107,12 +107,14 @@ class DtaleData(object):
 
     def is_up(self):
         """
-        This function checks to see if instance's :mod:`flask:flask.Flask` process is up by hitting 'health' route
+        This function checks to see if instance's :mod:`flask:flask.Flask` process is up by hitting 'health' route.
+
+        Using `verify=False` will allow us to validate instances being served up over SSL
 
         :return: `True` if :mod:`flask:flask.Flask` process is up and running, `False` otherwise
         """
         try:
-            return requests.get(self._url + '/health').ok
+            return requests.get(self._url + '/health', verify=False).ok
         except BaseException:
             return False
 

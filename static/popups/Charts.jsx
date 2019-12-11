@@ -26,7 +26,7 @@ function generateChartState({ group, x, y, query, aggregation }) {
 }
 
 const AGGREGATIONS = [
-  { value: "count", label: "Count"},
+  { value: "count", label: "Count" },
   { value: "first", label: "First" },
   { value: "last", label: "Last" },
   { value: "mean", label: "Mean" },
@@ -169,6 +169,7 @@ class ReactCharts extends React.Component {
                 getOptionValue={_.property("value")}
                 value={this.state.aggregation}
                 onChange={selected => this.setState({ aggregation: selected })}
+                isClearable
                 filterOption={createFilter({ ignoreAccents: false })} // required for performance reasons!
               />
             </div>
@@ -214,7 +215,7 @@ class ReactCharts extends React.Component {
               <input
                 type="checkbox"
                 checked={this.state.chartPerGroup}
-                onChange={e => this.setState({ chartPerGroup: e.target.checked})}
+                onChange={e => this.setState({ chartPerGroup: e.target.checked })}
               />
             </div>
           </ConditionalRender>

@@ -20,7 +20,8 @@ from six import PY3
 
 from dtale import dtale
 from dtale.cli.clickutils import retrieve_meta_info_and_version, setup_logging
-from dtale.utils import build_shutdown_url, build_url, dict_merge, get_host, swag_from
+from dtale.utils import (build_shutdown_url, build_url, dict_merge, get_host,
+                         swag_from)
 from dtale.views import cleanup, startup
 
 if PY3:
@@ -422,7 +423,7 @@ def show(data=None, host=None, port=None, name=None, debug=False, subprocess=Tru
         if open_browser:
             webbrowser.get().open(url)
 
-        app.run(host=host or '0.0.0.0', port=selected_port, debug=debug)
+        app.run(host='0.0.0.0', port=selected_port, debug=debug)
 
     if subprocess:
         _thread.start_new_thread(_show, ())
