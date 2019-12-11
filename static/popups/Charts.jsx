@@ -25,7 +25,20 @@ function generateChartState({ group, x, y, query, aggregation }) {
   return { url: buildURLString("/dtale/chart-data", params) };
 }
 
-const AGGREGATIONS = ["count", "first", "last", "mean", "median", "min", "max", "std", "var", "mad", "prod", "sum"];
+const AGGREGATIONS = [
+  { value: "count", label: "Count"},
+  { value: "first", label: "First" },
+  { value: "last", label: "Last" },
+  { value: "mean", label: "Mean" },
+  { value: "median", label: "Median" },
+  { value: "min", label: "Minimum" },
+  { value: "max", label: "Maximum" },
+  { value: "std", label: "Standard Deviation" },
+  { value: "var", label: "Variance" },
+  { value: "mad", label: "Mean Absolute Deviation" },
+  { value: "prod", label: "Product of All Items" },
+  { value: "sum", label: "Sum" },
+];
 
 const baseState = query => ({
   x: null,
@@ -35,10 +48,11 @@ const baseState = query => ({
   chartType: { value: "line" },
   url: null,
   zoomed: null,
+  chartPerGroup: false,
   query,
 });
 
-require("./CoverageChart.css");
+require("./Charts.css");
 
 class ReactCharts extends React.Component {
   constructor(props) {
@@ -150,8 +164,8 @@ class ReactCharts extends React.Component {
               <Select
                 className="Select is-clearable is-searchable Select--single"
                 classNamePrefix="Select"
-                options={_.map(AGGREGATIONS, a => ({ value: a }))}
-                getOptionLabel={_.property("value")}
+                options={AGGREGATIONS}
+                getOptionLabel={_.property("label")}
                 getOptionValue={_.property("value")}
                 value={this.state.aggregation}
                 onChange={selected => this.setState({ aggregation: selected })}
@@ -194,6 +208,16 @@ class ReactCharts extends React.Component {
               />
             </div>
           </div>
+          <ConditionalRender display={_.size(this.state.group || []) > 0}>
+            <span className="mb-auto mt-auto">Chart per Group:</span>
+            <div className="col-auto">
+              <input
+                type="checkbox"
+                checked={this.state.chartPerGroup}
+                onChange={e => this.setState({ chartPerGroup: e.target.checked})}
+              />
+            </div>
+          </ConditionalRender>
         </div>
         <div className="row pb-3">
           <div className="col-md-10">{this.renderLabel()}</div>
