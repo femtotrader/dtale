@@ -1,4 +1,5 @@
 import $ from "jquery";
+import _ from "lodash";
 import React from "react";
 
 function measureText(str) {

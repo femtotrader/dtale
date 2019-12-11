@@ -748,9 +748,16 @@ def get_chart_data():
         y = get_str_arg(request, 'y')
         group_col = get_str_arg(request, 'group')
         if group_col is not None:
-            data = data[[group_col, x, y]].sort_values([group_col, x])
-            data.columns = [group_col, 'x', 'y']
-            if len(data[group_col].unique()) > 5:
+            group_col = group_col.split(',')
+        agg = get_str_arg(request, 'agg')
+        if group_col is not None:
+            data = data[group_col + [x, y]].sort_values(group_col + [x])
+            data.columns = group_col + ['x', 'y']
+            if agg is not None:
+                data = data.groupby(group_col + ['x'])
+                data = getattr(data, agg)().reset_index()
+
+            if len(data[group_col].drop_duplicates()) > 5:
                 msg = (
                     '{} contains more than 5 groups, please add additional filter'
                     ' or else chart will be unreadable'
@@ -761,11 +768,17 @@ def get_chart_data():
                 grid_columns(data[['x', 'y']]), overrides={'D': lambda f, i, c: f.add_timestamp(i, c)}, nan_display=None
             )
             for group_val, grp in data.groupby(group_col):
-                group_val = group_val if isinstance(group_val, string_types) else '{0:.0f}'.format(group_val)
+                group_val = '/'.join([
+                    gv if isinstance(gv, string_types) else '{0:.0f}'.format(gv) for gv in make_list(group_val)
+                ])
                 ret_data['data'][group_val] = f.format_lists(grp)
         else:
             data = data[[x, y]].sort_values(x)
             data.columns = ['x', 'y']
+            if agg is not None:
+                data = data.groupby('x')
+                data = getattr(data, agg)().reset_index()
+
             if any(data['x'].duplicated()):
                 return jsonify(
                     dict(error='{} contains duplicates, please specify group or additional filtering'.format(x))

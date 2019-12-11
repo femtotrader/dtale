@@ -28,13 +28,21 @@ const COLOR_PROPS = [
 
 function createChart(ctx, fetchedData, { columns, x, y, additionalOptions, chartType }) {
   const { data } = fetchedData;
-  const colors = chroma.scale(["orange", "yellow", "green", "lightblue", "darkblue"]).domain([0, _.size(data)]);
+  let type = chartType || "line";
+  if (type === "stacked") {
+    type = "bar";
+  }
+  let colors = chroma.scale(["orange", "yellow", "green", "lightblue", "darkblue"]);
+  if (type === "pie") {
+    colors = colors.domain([0, _.get(_.values(data), "0.x.length")]);
+  } else {
+    colors = colors.domain([0, _.size(data)]);
+  }
   const cfg = {
-    type: chartType || "line",
+    type,
     data: {
       labels: _.get(_.values(data), "0.x"),
       datasets: _.map(_.toPairs(data), ([k, v], i) => {
-        const color = colors(i).hex();
         const ptCfg = {
           fill: false,
           lineTension: 0.1,
@@ -46,7 +54,12 @@ function createChart(ctx, fetchedData, { columns, x, y, additionalOptions, chart
         if (k !== "all") {
           ptCfg.label = k;
         }
-        _.forEach(COLOR_PROPS, cp => (ptCfg[cp] = color));
+        if (type === "pie") {
+          ptCfg.backgroundColor = _.map(v.y, (_p, i) => colors(i).hex());
+        } else {
+          const color = colors(i).hex();
+          _.forEach(COLOR_PROPS, cp => (ptCfg[cp] = color));
+        }
         return ptCfg;
       }),
     },
@@ -61,8 +74,8 @@ function createChart(ctx, fetchedData, { columns, x, y, additionalOptions, chart
           callbacks: {
             label: (tooltipItem, data) => {
               const value = _.round(tooltipItem.yLabel, 4);
-              if(_.size(data) > 1) {
-                const label = data.datasets[tooltipItem.datasetIndex].label || '';
+              if (_.size(data) > 1) {
+                const label = data.datasets[tooltipItem.datasetIndex].label || "";
                 if (label) {
                   return `${label}: ${value}`;
                 }
@@ -97,7 +110,7 @@ function createChart(ctx, fetchedData, { columns, x, y, additionalOptions, chart
       additionalOptions
     ),
   };
-  if (isDateCol(_.find(columns, { name: x }).dtype)) {
+  if (type !== "pie" && isDateCol(_.find(columns, { name: x }).dtype)) {
     const units = _.size(cfg.data.labels) > 150 ? "month" : "day";
     cfg.options.scales.xAxes = [
       {
@@ -117,8 +130,19 @@ function createChart(ctx, fetchedData, { columns, x, y, additionalOptions, chart
     cfg.options.tooltips.callbacks.title = (tooltipItems, _data) =>
       moment(new Date(tooltipItems[0].xLabel)).format("YYYY-MM-DD");
   }
-  if (_.size(cfg.data.datasets) < 2) {
+  if (type !== "pie" && _.size(cfg.data.datasets) < 2) {
     cfg.options.legend = { display: false };
+  }
+  if (type === "pie") {
+    delete cfg.options.scales;
+    delete cfg.options.tooltips;
+    if (isDateCol(_.find(columns, { name: x }).dtype)) {
+      cfg.data.labels = _.map(cfg.data.labels, l => moment(new Date(l)).format("YYYY-MM-DD"));
+    }
+  }
+  if (chartType === "stacked") {
+    cfg.options.scales.xAxes[0].stacked = true;
+    cfg.options.scales.yAxes[0].stacked = true;
   }
   return chartUtils.createChart(ctx, cfg);
 }
@@ -187,6 +211,9 @@ class ChartsBody extends React.Component {
       toggleBouncer();
       if (this.mounted) {
         if (fetchedChartData.error) {
+          if (this.state.chart) {
+            this.state.chart.destroy();
+          }
           this.setState({
             error: <RemovableError {...fetchedChartData} />,
             chart: null,
@@ -195,6 +222,9 @@ class ChartsBody extends React.Component {
           return;
         }
         if (_.isEmpty(_.get(fetchedChartData, "data", {}))) {
+          if (this.state.chart) {
+            this.state.chart.destroy();
+          }
           this.setState({
             error: <RemovableError error="No data found." />,
             chart: null,

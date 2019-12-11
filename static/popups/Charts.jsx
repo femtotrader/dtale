@@ -11,21 +11,27 @@ import { buildURLString } from "../actions/url-utils";
 import { fetchJson } from "../fetcher";
 import ChartsBody from "./ChartsBody";
 
-function generateChartState({ group, x, y, query }) {
+function generateChartState({ group, x, y, query, aggregation }) {
   if (_.isNull(x) || _.isNull(y)) {
     return { url: null, desc: null };
   }
   const params = { x: x.value, y: y.value, query };
   if (!_.isNull(group)) {
-    params.group = group.value;
+    params.group = _.join(_.map(group, "value"), ",");
+  }
+  if (!_.isNull(aggregation)) {
+    params.agg = aggregation.value;
   }
   return { url: buildURLString("/dtale/chart-data", params) };
 }
+
+const AGGREGATIONS = ["count", "first", "last", "mean", "median", "min", "max", "std", "var", "mad", "prod", "sum"];
 
 const baseState = query => ({
   x: null,
   y: null,
   group: null,
+  aggregation: null,
   chartType: { value: "line" },
   url: null,
   zoomed: null,
@@ -55,21 +61,31 @@ class ReactCharts extends React.Component {
     });
   }
 
-  renderSelect(prop, otherProps) {
+  renderSelect(prop, otherProps, isMulti = false) {
     const { columns } = this.state;
-    let finalOptions = _.map(columns, c => ({ value: c.name }));
-    finalOptions = _.reject(finalOptions, _.compact(_.map(otherProps, p => _.get(this.state, [p, "value"]))));
+    let finalOptions = _.map(columns, "name");
+    const otherValues = _(this.state)
+      .pick(otherProps)
+      .values()
+      .concat()
+      .map("value")
+      .compact()
+      .value();
+    finalOptions = _.reject(finalOptions, otherValues);
     return (
       <div className="input-group mr-3">
         <Select
+          isMulti={isMulti}
           className="Select is-clearable is-searchable Select--single"
           classNamePrefix="Select"
-          options={_.sortBy(finalOptions, o => _.toLower(o.value))}
+          options={_.map(
+            _.sortBy(finalOptions, o => _.toLower(o)),
+            o => ({ value: o })
+          )}
           getOptionLabel={_.property("value")}
           getOptionValue={_.property("value")}
           value={this.state[prop]}
           onChange={selected => this.setState({ [prop]: selected })}
-          noOptionsText={() => "No columns found"}
           isClearable
           filterOption={createFilter({ ignoreAccents: false })} // required for performance reasons!
         />
@@ -122,27 +138,27 @@ class ReactCharts extends React.Component {
     return (
       <div className="charts-body">
         <div className="row pl-5 pt-3 pb-3 correlations-filters">
-          <span className="mb-auto mt-auto">Chart:</span>
-          <div className="col-auto">
-            <div className="input-group mr-3">
-              <Select
-                className="Select is-clearable is-searchable Select--single"
-                classNamePrefix="Select"
-                options={[{ value: "line" }, { value: "bar" }]}
-                getOptionLabel={_.property("value")}
-                getOptionValue={_.property("value")}
-                value={this.state.chartType}
-                onChange={selected => this.setState({ chartType: selected })}
-                filterOption={createFilter({ ignoreAccents: false })} // required for performance reasons!
-              />
-            </div>
-          </div>
           <span className="pl-3 mb-auto mt-auto">X:</span>
           <div className="col-auto">{this.renderSelect("x", ["y", "group"])}</div>
           <span className="mb-auto mt-auto">Y:</span>
           <div className="col-auto">{this.renderSelect("y", ["x", "group"])}</div>
           <span className="mb-auto mt-auto">Group:</span>
-          <div className="col-auto">{this.renderSelect("group", ["x", "y"])}</div>
+          <div className="col">{this.renderSelect("group", ["x", "y"], true)}</div>
+          <span className="mb-auto mt-auto">Aggregation:</span>
+          <div className="col-auto">
+            <div className="input-group mr-3">
+              <Select
+                className="Select is-clearable is-searchable Select--single"
+                classNamePrefix="Select"
+                options={_.map(AGGREGATIONS, a => ({ value: a }))}
+                getOptionLabel={_.property("value")}
+                getOptionValue={_.property("value")}
+                value={this.state.aggregation}
+                onChange={selected => this.setState({ aggregation: selected })}
+                filterOption={createFilter({ ignoreAccents: false })} // required for performance reasons!
+              />
+            </div>
+          </div>
           <div className="col">
             <button
               className="btn btn-primary float-right"
@@ -160,6 +176,23 @@ class ReactCharts extends React.Component {
               value={this.state.query || ""}
               onChange={e => this.setState({ query: e.target.value })}
             />
+          </div>
+        </div>
+        <div className="row pl-5 pt-3 pb-3 correlations-filters">
+          <span className="mb-auto mt-auto">Chart:</span>
+          <div className="col-auto">
+            <div className="input-group mr-3">
+              <Select
+                className="Select is-clearable is-searchable Select--single"
+                classNamePrefix="Select"
+                options={[{ value: "line" }, { value: "bar" }, { value: "stacked" }, { value: "pie" }]}
+                getOptionLabel={_.property("value")}
+                getOptionValue={_.property("value")}
+                value={this.state.chartType}
+                onChange={selected => this.setState({ chartType: selected })}
+                filterOption={createFilter({ ignoreAccents: false })} // required for performance reasons!
+              />
+            </div>
           </div>
         </div>
         <div className="row pb-3">
